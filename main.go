@@ -41,11 +41,16 @@ func main() {
 	go func() { log.Fatal((&Proxy{g: g, srv: s, target: cfg.ProxyTarget}).Serve(pl)) }()
 	go func() { log.Fatal(serve(cfg.Auth, s.AuthHandler())) }()
 	log.Printf("mtx-gate up, enforce=%v", *enforce)
-	log.Fatal(serve(cfg.API, s.APIHandler()))
+	log.Fatal(serveTLS(cfg.API, s.APIHandler(), cfg.APICert, cfg.APIKey))
 }
 
-func serve(addr string, h http.Handler) error {
+func serve(addr string, h http.Handler) error { return serveTLS(addr, h, "", "") }
+
+func serveTLS(addr string, h http.Handler, cert, key string) error {
 	srv := &http.Server{Addr: addr, Handler: h, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 10 * time.Second,
 		WriteTimeout: 10 * time.Second, MaxHeaderBytes: 16 << 10}
+	if cert != "" {
+		return srv.ListenAndServeTLS(cert, key)
+	}
 	return srv.ListenAndServe()
 }

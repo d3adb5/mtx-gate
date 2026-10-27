@@ -21,6 +21,8 @@ type Config struct {
 	Owners         map[string][]string `json:"owners"` // owner → fixed (Teevee) paths
 	Admins         []string            `json:"admins"` // api and metrics only
 	TrustedProxies []string            `json:"trustedProxies"`
+	APICert        string              `json:"apiCert"` // local test relay only; production has Traefik's TLS
+	APIKey         string              `json:"apiKey"`
 }
 
 func loadConfig(path string) (*Config, map[string]string, error) {
