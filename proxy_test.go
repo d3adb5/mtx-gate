@@ -47,15 +47,15 @@ func TestProxyResetsClosedAndForwardsOpen(t *testing.T) {
 	defer front.Close()
 	go (&Proxy{g: g, srv: s, target: up.Addr().String()}).Serve(front)
 
+	// The reset may land during connect on loopback, or on the first read.
 	c, err := net.Dial("tcp", front.Addr().String())
-	if err != nil {
-		t.Fatal(err)
+	if err == nil {
+		c.SetReadDeadline(time.Now().Add(2 * time.Second))
+		if n, err := c.Read(make([]byte, 1)); n != 0 || err == nil {
+			t.Fatal("closed IP must be dropped")
+		}
+		c.Close()
 	}
-	c.SetReadDeadline(time.Now().Add(2 * time.Second))
-	if n, err := c.Read(make([]byte, 1)); n != 0 || err == nil {
-		t.Fatal("closed IP must be dropped")
-	}
-	c.Close()
 
 	g.Open(netip.MustParseAddr("127.0.0.1"))
 	if c, err = net.Dial("tcp", front.Addr().String()); err != nil {
