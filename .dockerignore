@@ -1,0 +1,5 @@
+*
+!go.mod
+!*.go
+!watch/
+*_test.go
