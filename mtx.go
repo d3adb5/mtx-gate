@@ -57,6 +57,16 @@ func matches(s mtxSession, path, user string, ip netip.Addr) bool {
 	return true
 }
 
+// Live tells whether path has a publisher.
+func (m *MTX) Live(path string) (bool, error) {
+	var p struct{ Ready bool }
+	err := m.do(http.MethodGet, "/v3/paths/get/"+path, &p)
+	if se, ok := err.(*statusError); ok && se.code == http.StatusNotFound {
+		return false, nil
+	}
+	return p.Ready, err
+}
+
 // Kick ends every RTSPS and WebRTC session that matches. Errors are logged without any detail of the session.
 func (m *MTX) Kick(path, user string, ip netip.Addr) {
 	for _, kind := range []string{"rtsps", "webrtc"} {

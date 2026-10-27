@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Watch</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="watch.css">
+<script src="watch.js" defer></script>
+</head>
+<body>
+<main>
+  <form id="login" class="card" autocomplete="on">
+    <h1>Watch</h1>
+    <label>Login <input id="user" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" required></label>
+    <label>Password <input id="pass" name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Sign in</button>
+    <p id="loginMsg" class="msg" role="alert"></p>
+  </form>
+
+  <section id="picker" class="card" hidden>
+    <h1>Channels</h1>
+    <ul id="channels"></ul>
+    <button id="signoutPicker" class="quiet" type="button">Sign out</button>
+  </section>
+
+  <section id="player" hidden>
+    <div class="bar">
+      <button id="back" type="button">Channels</button>
+      <span id="title"></span>
+      <span id="status" role="status"></span>
+      <button id="signoutPlayer" class="quiet" type="button">Sign out</button>
+    </div>
+    <div class="stage">
+      <video id="video" playsinline controls></video>
+      <div id="overlay" hidden><p id="overlayText"></p><button id="tap" type="button" hidden>Play with sound</button></div>
+    </div>
+  </section>
+</main>
+</body>
+</html>

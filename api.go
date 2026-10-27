@@ -26,6 +26,7 @@ type Server struct {
 	enforce  bool
 	counters *Counters
 	failWait time.Duration
+	live     func(path string) (bool, error) // is a path published right now (watch page)
 }
 
 // decide applies permissive mode: when not enforcing, a denial is only counted.
@@ -116,6 +117,7 @@ func writeJSON(w http.ResponseWriter, v any) {
 // APIHandler serves /gate/v1/* (through the ingress) and /forward (Traefik forwardAuth, not routed by the ingress).
 func (s *Server) APIHandler() http.Handler {
 	m := http.NewServeMux()
+	s.watchRoutes(m)
 	m.HandleFunc("GET /forward", func(w http.ResponseWriter, r *http.Request) {
 		ip, ok := s.clientIP(r)
 		if s.decide(ok && s.g.IsOpen(ip)) {

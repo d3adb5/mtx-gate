@@ -23,7 +23,10 @@ func TestProxyHeaderV4(t *testing.T) {
 
 func TestProxyResetsClosedAndForwardsOpen(t *testing.T) {
 	s, g, _ := newTestServer(t, true)
-	up, _ := net.Listen("tcp", "127.0.0.1:0")
+	up, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer up.Close()
 	got := make(chan []byte, 1)
 	go func() {
@@ -37,11 +40,17 @@ func TestProxyResetsClosedAndForwardsOpen(t *testing.T) {
 		c.Write([]byte("pong"))
 		c.Close()
 	}()
-	front, _ := net.Listen("tcp", "127.0.0.1:0")
+	front, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer front.Close()
 	go (&Proxy{g: g, srv: s, target: up.Addr().String()}).Serve(front)
 
-	c, _ := net.Dial("tcp", front.Addr().String())
+	c, err := net.Dial("tcp", front.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
 	c.SetReadDeadline(time.Now().Add(2 * time.Second))
 	if n, err := c.Read(make([]byte, 1)); n != 0 || err == nil {
 		t.Fatal("closed IP must be dropped")
@@ -49,7 +58,9 @@ func TestProxyResetsClosedAndForwardsOpen(t *testing.T) {
 	c.Close()
 
 	g.Open(netip.MustParseAddr("127.0.0.1"))
-	c, _ = net.Dial("tcp", front.Addr().String())
+	if c, err = net.Dial("tcp", front.Addr().String()); err != nil {
+		t.Fatal(err)
+	}
 	defer c.Close()
 	c.Write([]byte("hello"))
 	b := <-got

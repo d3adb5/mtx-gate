@@ -27,7 +27,8 @@ func main() {
 	var mtx *MTX
 	g := NewGate(cfg, pass, func(path, user string, ip netip.Addr) { go mtx.Kick(path, user, ip) })
 	mtx = NewMTX(cfg.MTXAPI, g.internal)
-	s := &Server{g: g, trusted: trusted, enforce: *enforce, counters: &Counters{}, failWait: time.Second}
+	s := &Server{g: g, trusted: trusted, enforce: *enforce, counters: &Counters{}, failWait: time.Second,
+		live: mtx.Live}
 
 	go func() {
 		for range time.Tick(5 * time.Second) {

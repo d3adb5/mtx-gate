@@ -21,7 +21,9 @@ in memory only (see "Gate restart").
 ```
 internet ─ TCP 8322 ─▶ gate L4 proxy ──PROXY v2──▶ MediaMTX RTSPS 127.0.0.1:18322   (rtspTrustedProxies: 127.0.0.1)
          ─ HTTPS ─▶ Traefik ─┬─ /gate/v1/*  ─▶ gate API :9080   (own rate-limit bucket)
+                             │    (incl. the browser watch page /gate/v1/watch/, no forwardAuth)
                              └─ WHIP/WHEP ─forwardAuth(gate :9080/forward)─▶ MediaMTX webrtc
+                                (MediaMTX's own reader/publisher pages stay behind forwardAuth and their logins)
 MediaMTX authMethod: http ─▶ gate 127.0.0.1:9000/auth   (publish, read, api, metrics; everything else refused)
 ```
 
@@ -104,9 +106,26 @@ which covers start, restart, codec change and rebuild. Clients renew every 60 s 
 until the stop DELETE has gone out. A 404 carrying `X-Mtx-Gate` means the IP isn't open; it never means "not
 streaming". Owners publish to their own fixed paths and read each other's, from an open IP.
 
-**Browser watching: user decision pending.** A browser can't call `open`. Either browser watching on MediaMTX's page
-ends, or the gate serves `/gate/v1/watch/<path>`: the browser's Basic login prompt, then `open`, then MediaMTX's
-reader in a frame, with a fetch renewal every 60 s.
+**Browser watching (user decision 2026-10-27): the gate serves its own watch page** at `/gate/v1/watch/`, in place
+of MediaMTX's reader (which starts muted and can't open the gate). Fixed (Teevee) channels only: webcam shares are
+E2E and a browser can't decrypt them.
+- Sign-in form → `POST open`, then `GET /gate/v1/channels` (owner Basic: strangers learn no channel names). The login
+  lives in page memory only (no storage, cookies or URLs); every call sends it as an Authorization header, so
+  there's no cookie to forge (no CSRF). The password field is cleared right after sign-in. Sign out forgets it.
+- Its own WHEP client (no third-party code) on the same origin: `POST /<path>/whep` through forwardAuth, non-trickle,
+  DELETE of the resource on leave (keepalive). Renews `open` every 60 s while signed in.
+- **Sound:** the video is never muted. Picking a channel is a click, and that click carries the sound permission.
+  If a browser still refuses audible playback, the page shows a "Play with sound" button rather than starting
+  muted.
+- **End detection:** while playing, it polls `GET /gate/v1/live/<path>` (owner Basic; the gate asks MediaMTX's
+  `/v3/paths/get`) every 3 s. Not ready → "The stream ended", teardown, then it keeps polling and resumes by itself
+  when the channel is back. A dead peer connection or 12 s without bytes while the channel is live → reconnect.
+- Hardening: CSP `default-src 'none'` with only `'self'` scripts, styles and connections, no inline code (a test
+  enforces it), `frame-ancestors 'none'`, nosniff, no-referrer, no-store, COOP/CORP same-origin, HSTS, a
+  Permissions-Policy denying camera/mic/location. Failed logins cost 1 s, and Traefik rate-limits the bucket.
+- Checked in headless Chrome 156 against the gate (`-enforce`) and a fake MediaMTX API: bad login refused, channels
+  listed only after login, waiting state, not muted, sign-out, no CSP violations. Real playback needs a MediaMTX
+  with WebRTC (the user's to start).
 
 Later: owner-minted guest tickets (share links) would add a ticket-only read principal. Redeem keeps owner Basic as a
 check, not a structural part of tickets, so this doesn't need a v2.
