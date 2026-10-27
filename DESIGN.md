@@ -161,9 +161,11 @@ source. Failed logins cost the caller 1 s.
 1. Done: no anonymous read on `mcam/` (secretlab 25eb481, not pushed). Viewers use their own relay login (Mumla
    1c6039e, Mumble 4cc882209/ddf38bd77). The local test relay still has `any` read; it needs mirroring (the user
    starts it).
-2. Gate (this repo) + chart: an `extraContainers` sidecar, `authMethod: http`, `rtspsAddress: 127.0.0.1:18322`,
-   `rtspTrustedProxies`, `webrtcTrustedProxies`, the Service's 8322 targeting the gate, the forwardAuth middleware,
-   and the `/gate/v1` Ingress. Tested against a local relay.
+2. Done, not pushed: image build (Dockerfile, CI: tag `v0.1.0` → ghcr.io/d3adb5/mtx-gate:0.1.0), chart 0.5.0
+   `gate:` block (charts ea8dab6, 73 tests), secretlab aa934f6 (gate permissive, forwardAuth on the WebRTC
+   Ingress, `/gate/v1` Ingress with its own 120/min bucket, NetworkPolicy for 9080). Push order: mtx-gate + tag,
+   charts, then secretlab. The gate refuses to start on a password under 16 characters (fail closed = outage):
+   check the sealed ones first.
 3. Clients: Mumble and Mumla v1.1, Teevee `open` calls, teevee-desktop 0.4.0.
 4. Deploy permissive. The user pushes secretlab, the charts and the gate image.
 5. **Before enforcing:** teevee-desktop 0.4.0 installed on eevee's machine, Teevee updated on every phone, and
